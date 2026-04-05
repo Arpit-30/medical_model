@@ -100,7 +100,7 @@ with gr.Blocks() as demo:
     )
 
     # 📩 Email display
-    email_box = gr.Textbox(label="📨 Email", lines=5)
+    email_box = gr.Textbox(label="📨 Email", lines=50)
 
     # 📊 Metrics
     reward_box = gr.Textbox(label="Reward")
