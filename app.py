@@ -33,11 +33,36 @@ def smart_ai(email):
     return "spam" if score >= 1 else "not_spam"
 
 
-# 👤 MANUAL CLASSIFICATION
+# 🧠 EXPLAIN WHY
+def explain_email(email):
+    email = email.lower()
+
+    reasons = []
+
+    spam_keywords = [
+        "free", "win", "winner", "prize", "cash",
+        "urgent", "claim", "offer", "click", "buy"
+    ]
+
+    for word in spam_keywords:
+        if word in email:
+            reasons.append(f"keyword detected: '{word}'")
+
+    if "http" in email or "www" in email:
+        reasons.append("contains link")
+
+    if not reasons:
+        reasons.append("no strong spam signals")
+
+    return reasons
+
+
+# 👤 MANUAL CLASSIFICATION (with explanation)
 def classify(action):
     global obs, score, steps
 
     current_email = obs.email_text
+    reasons = explain_email(current_email)
 
     obs, reward, done, _ = env.step(Action(action_type=action))
 
@@ -46,7 +71,9 @@ def classify(action):
 
     avg = score / steps if steps > 0 else 0
 
-    return current_email, f"{reward.value} ({reward.reason})", f"{avg:.2f}"
+    reason_text = "\n".join([f"- {r}" for r in reasons])
+
+    return current_email, f"{reward.value} ({reward.reason})\n{reason_text}", f"{avg:.2f}"
 
 
 # 🔄 CHANGE TASK
@@ -62,17 +89,20 @@ def change_task(task):
     return obs.email_text, "0", "0.0", ""
 
 
-# 🤖 AUTO AI RUN
+# 🤖 AUTO AI RUN (WITH EXPLANATION)
 def run_ai():
     global env, obs, score, steps
 
     log = ""
 
-    for _ in range(10):  # run 10 steps automatically
+    for _ in range(10):
         if env.done:
             break
 
-        action = smart_ai(obs.email_text)
+        email = obs.email_text
+
+        action = smart_ai(email)
+        reasons = explain_email(email)
 
         obs, reward, done, _ = env.step(Action(action_type=action))
 
@@ -80,6 +110,10 @@ def run_ai():
         steps += 1
 
         log += f"Step {steps}: {action} → {reward.value} ({reward.reason})\n"
+        log += "Reason:\n"
+        for r in reasons:
+            log += f"  - {r}\n"
+        log += "\n"
 
     avg = score / steps if steps > 0 else 0
 
@@ -90,7 +124,7 @@ def run_ai():
 with gr.Blocks() as demo:
 
     gr.Markdown("# 📧 AI Email Spam Detector")
-    gr.Markdown("Play manually or let AI agent classify emails automatically")
+    gr.Markdown("Play manually or run AI simulation with explainable decisions")
 
     # 🎯 Task selector
     task_selector = gr.Dropdown(
@@ -103,7 +137,7 @@ with gr.Blocks() as demo:
     email_box = gr.Textbox(label="📨 Email", lines=5)
 
     # 📊 Metrics
-    reward_box = gr.Textbox(label="Reward")
+    reward_box = gr.Textbox(label="Reward + Explanation")
     score_box = gr.Textbox(label="Average Score")
 
     # 👤 Manual buttons
@@ -111,9 +145,9 @@ with gr.Blocks() as demo:
     not_spam_btn = gr.Button("✅ Not Spam")
 
     # 🤖 AI section
-    gr.Markdown("## 🤖 Auto AI Agent")
-    ai_btn = gr.Button("Run AI Agent")
-    ai_log = gr.Textbox(label="AI Log", lines=8)
+    gr.Markdown("## 🤖 Auto AI Simulation")
+    ai_btn = gr.Button("Run AI Simulation")
+    ai_log = gr.Textbox(label="AI Log + Explanation", lines=10)
 
     # 🔁 TASK CHANGE
     task_selector.change(
