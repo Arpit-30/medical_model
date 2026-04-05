@@ -3,7 +3,7 @@ title: Email Spam Env
 emoji: 🚀
 colorFrom: blue
 colorTo: yellow
-sdk: docker
+sdk: gradio 
 pinned: false
 license: mit
 short_description: AI email spam detection using OpenEnv
