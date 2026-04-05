@@ -68,7 +68,7 @@ def run_ai():
 
     log = ""
 
-    for _ in range(50):  # run 5 steps automatically
+    for _ in range(10):  # run 10 steps automatically
         if env.done:
             break
 
