@@ -68,7 +68,7 @@ def run_ai():
 
     log = ""
 
-    for _ in range(5):  # run 5 steps automatically
+    for _ in range(50):  # run 5 steps automatically
         if env.done:
             break
 
@@ -100,7 +100,7 @@ with gr.Blocks() as demo:
     )
 
     # 📩 Email display
-    email_box = gr.Textbox(label="📨 Email", lines=50)
+    email_box = gr.Textbox(label="📨 Email", lines=5)
 
     # 📊 Metrics
     reward_box = gr.Textbox(label="Reward")
