@@ -6,7 +6,7 @@ colorTo: yellow
 sdk: docker
 pinned: false
 license: mit
-short_description: OpenEnv-based AI email spam detection environment with RL rewards
+short_description: AI email spam detection using OpenEnv
 ---
 # 📧 AI Email Spam Detection (OpenEnv)
 
