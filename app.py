@@ -2,7 +2,7 @@ import gradio as gr
 from server.email_env_environment import EmailEnvironment
 from models import Action
 
-# 🌍 INIT ENV
+# 🌍 INIT
 env = EmailEnvironment(task="easy")
 obs = env.reset()
 
@@ -10,72 +10,51 @@ score = 0
 steps = 0
 
 
-# 🧠 SMART AI
+# 🧠 AI
 def smart_ai(email):
     email = email.lower()
+    keywords = ["free", "win", "offer", "urgent", "cash"]
 
-    spam_keywords = [
-        "free", "win", "winner", "prize", "cash",
-        "urgent", "claim", "offer", "click", "buy"
-    ]
-
-    has_link = "http" in email or "www" in email
-
-    score = 0
-
-    for word in spam_keywords:
-        if word in email:
-            score += 1
-
-    if has_link:
+    score = sum(1 for w in keywords if w in email)
+    if "http" in email or "www" in email:
         score += 1
 
     return "spam" if score >= 1 else "not_spam"
 
 
-# 🧠 EXPLANATION
-def explain_email(email):
+# 🧠 EXPLAIN
+def explain(email):
     email = email.lower()
     reasons = []
 
-    spam_keywords = [
-        "free", "win", "winner", "prize", "cash",
-        "urgent", "claim", "offer", "click", "buy"
-    ]
-
-    for word in spam_keywords:
-        if word in email:
-            reasons.append(f"keyword: '{word}'")
+    for w in ["free", "win", "offer", "urgent", "cash"]:
+        if w in email:
+            reasons.append(f"{w}")
 
     if "http" in email or "www" in email:
-        reasons.append("contains link")
+        reasons.append("link")
 
-    if not reasons:
-        reasons.append("no strong spam signals")
-
-    return reasons
+    return ", ".join(reasons) if reasons else "clean"
 
 
-# 👤 MANUAL MODE
+# 👤 MANUAL
 def classify(action):
     global obs, score, steps
 
     email = obs.email_text
-    reasons = explain_email(email)
+    reason = explain(email)
 
     obs, reward, done, _ = env.step(Action(action_type=action))
 
     score += reward.value
     steps += 1
 
-    avg = score / steps if steps > 0 else 0
+    avg = score / steps if steps else 0
 
-    reason_text = "\n".join([f"- {r}" for r in reasons])
-
-    return email, f"{reward.value} ({reward.reason})\n{reason_text}", f"{avg:.2f}"
+    return email, f"{reward.value} | {reason}", f"{avg:.2f}"
 
 
-# 🔄 CHANGE TASK
+# 🔄 TASK
 def change_task(task):
     global env, obs, score, steps
 
@@ -94,82 +73,49 @@ def run_ai():
 
     log = ""
 
-    for _ in range(8):  # reduced for mobile performance
+    for _ in range(5):  # small for mobile
         if env.done:
             break
 
         email = obs.email_text
-
         action = smart_ai(email)
-        reasons = explain_email(email)
+        reason = explain(email)
 
         obs, reward, done, _ = env.step(Action(action_type=action))
 
         score += reward.value
         steps += 1
 
-        log += f"Step {steps}: {action} → {reward.value}\n"
-        for r in reasons:
-            log += f"  - {r}\n"
-        log += "\n"
+        log += f"{steps}: {action} ({reason}) → {reward.value}\n"
 
-    avg = score / steps if steps > 0 else 0
+    avg = score / steps if steps else 0
 
     return obs.email_text, log, f"{avg:.2f}"
 
 
-# 🎨 UI (MOBILE FRIENDLY)
+# 🎨 MOBILE UI
 with gr.Blocks(fill_width=True) as demo:
 
-    gr.Markdown("## 📧 AI Email Spam Detector")
-    gr.Markdown("Classify emails or run AI simulation")
+    gr.Markdown("## 📧 Spam AI")
 
-    with gr.Column():
+    task = gr.Dropdown(["easy", "medium", "hard"], value="easy")
 
-        task_selector = gr.Dropdown(
-            ["easy", "medium", "hard"],
-            value="easy",
-            label="Select Task"
-        )
+    email = gr.Textbox(lines=3)
+    reward = gr.Textbox()
+    score_box = gr.Textbox()
 
-        email_box = gr.Textbox(label="📨 Email", lines=4)
+    spam = gr.Button("Spam")
+    not_spam = gr.Button("Not Spam")
 
-        reward_box = gr.Textbox(label="Reward + Explanation")
-        score_box = gr.Textbox(label="📊 Average Score")
+    ai = gr.Button("Run AI")
+    log = gr.Textbox(lines=4)
 
-    # 👇 Buttons row (mobile optimized)
-    with gr.Row():
-        spam_btn = gr.Button("🚨 Spam")
-        not_spam_btn = gr.Button("✅ Not Spam")
+    task.change(change_task, task, [email, reward, score_box, log])
 
-    gr.Markdown("### 🤖 AI Simulation")
+    spam.click(lambda: classify("spam"), outputs=[email, reward, score_box])
+    not_spam.click(lambda: classify("not_spam"), outputs=[email, reward, score_box])
 
-    ai_btn = gr.Button("Run AI Simulation")
-    ai_log = gr.Textbox(label="AI Log + Explanation", lines=6)
+    ai.click(run_ai, outputs=[email, log, score_box])
 
-    # 🔁 TASK SWITCH
-    task_selector.change(
-        change_task,
-        inputs=task_selector,
-        outputs=[email_box, reward_box, score_box, ai_log]
-    )
 
-    # 👤 MANUAL
-    spam_btn.click(
-        lambda: classify("spam"),
-        outputs=[email_box, reward_box, score_box]
-    )
-
-    not_spam_btn.click(
-        lambda: classify("not_spam"),
-        outputs=[email_box, reward_box, score_box]
-    )
-
-    # 🤖 AI RUN
-    ai_btn.click(
-        fn=run_ai,
-        outputs=[email_box, ai_log, score_box]
-    )
-
-# 🚀 LAUNCH
 demo.launch()
