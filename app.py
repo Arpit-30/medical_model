@@ -10,7 +10,7 @@ score = 0
 steps = 0
 
 
-# 🧠 SMART AI (rule-based)
+# 🧠 SMART AI
 def smart_ai(email):
     email = email.lower()
 
@@ -33,10 +33,9 @@ def smart_ai(email):
     return "spam" if score >= 1 else "not_spam"
 
 
-# 🧠 EXPLAIN WHY
+# 🧠 EXPLANATION
 def explain_email(email):
     email = email.lower()
-
     reasons = []
 
     spam_keywords = [
@@ -46,7 +45,7 @@ def explain_email(email):
 
     for word in spam_keywords:
         if word in email:
-            reasons.append(f"keyword detected: '{word}'")
+            reasons.append(f"keyword: '{word}'")
 
     if "http" in email or "www" in email:
         reasons.append("contains link")
@@ -57,12 +56,12 @@ def explain_email(email):
     return reasons
 
 
-# 👤 MANUAL CLASSIFICATION (with explanation)
+# 👤 MANUAL MODE
 def classify(action):
     global obs, score, steps
 
-    current_email = obs.email_text
-    reasons = explain_email(current_email)
+    email = obs.email_text
+    reasons = explain_email(email)
 
     obs, reward, done, _ = env.step(Action(action_type=action))
 
@@ -73,7 +72,7 @@ def classify(action):
 
     reason_text = "\n".join([f"- {r}" for r in reasons])
 
-    return current_email, f"{reward.value} ({reward.reason})\n{reason_text}", f"{avg:.2f}"
+    return email, f"{reward.value} ({reward.reason})\n{reason_text}", f"{avg:.2f}"
 
 
 # 🔄 CHANGE TASK
@@ -89,13 +88,13 @@ def change_task(task):
     return obs.email_text, "0", "0.0", ""
 
 
-# 🤖 AUTO AI RUN (WITH EXPLANATION)
+# 🤖 AUTO AI
 def run_ai():
     global env, obs, score, steps
 
     log = ""
 
-    for _ in range(10):
+    for _ in range(8):  # reduced for mobile performance
         if env.done:
             break
 
@@ -109,8 +108,7 @@ def run_ai():
         score += reward.value
         steps += 1
 
-        log += f"Step {steps}: {action} → {reward.value} ({reward.reason})\n"
-        log += "Reason:\n"
+        log += f"Step {steps}: {action} → {reward.value}\n"
         for r in reasons:
             log += f"  - {r}\n"
         log += "\n"
@@ -120,43 +118,43 @@ def run_ai():
     return obs.email_text, log, f"{avg:.2f}"
 
 
-# 🎨 UI
-with gr.Blocks() as demo:
+# 🎨 UI (MOBILE FRIENDLY)
+with gr.Blocks(fill_width=True) as demo:
 
-    gr.Markdown("# 📧 AI Email Spam Detector")
-    gr.Markdown("Play manually or run AI simulation with explainable decisions")
+    gr.Markdown("## 📧 AI Email Spam Detector")
+    gr.Markdown("Classify emails or run AI simulation")
 
-    # 🎯 Task selector
-    task_selector = gr.Dropdown(
-        ["easy", "medium", "hard"],
-        value="easy",
-        label="Select Task"
-    )
+    with gr.Column():
 
-    # 📩 Email display
-    email_box = gr.Textbox(label="📨 Email", lines=5)
+        task_selector = gr.Dropdown(
+            ["easy", "medium", "hard"],
+            value="easy",
+            label="Select Task"
+        )
 
-    # 📊 Metrics
-    reward_box = gr.Textbox(label="Reward + Explanation")
-    score_box = gr.Textbox(label="Average Score")
+        email_box = gr.Textbox(label="📨 Email", lines=4)
 
-    # 👤 Manual buttons
-    spam_btn = gr.Button("🚨 Spam")
-    not_spam_btn = gr.Button("✅ Not Spam")
+        reward_box = gr.Textbox(label="Reward + Explanation")
+        score_box = gr.Textbox(label="📊 Average Score")
 
-    # 🤖 AI section
-    gr.Markdown("## 🤖 Auto AI Simulation")
+    # 👇 Buttons row (mobile optimized)
+    with gr.Row():
+        spam_btn = gr.Button("🚨 Spam")
+        not_spam_btn = gr.Button("✅ Not Spam")
+
+    gr.Markdown("### 🤖 AI Simulation")
+
     ai_btn = gr.Button("Run AI Simulation")
-    ai_log = gr.Textbox(label="AI Log + Explanation", lines=10)
+    ai_log = gr.Textbox(label="AI Log + Explanation", lines=6)
 
-    # 🔁 TASK CHANGE
+    # 🔁 TASK SWITCH
     task_selector.change(
         change_task,
         inputs=task_selector,
         outputs=[email_box, reward_box, score_box, ai_log]
     )
 
-    # 👤 MANUAL ACTIONS
+    # 👤 MANUAL
     spam_btn.click(
         lambda: classify("spam"),
         outputs=[email_box, reward_box, score_box]
