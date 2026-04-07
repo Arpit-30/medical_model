@@ -6,7 +6,7 @@ colorTo: green
 sdk: gradio
 pinned: false
 license: mit
-short_description: AI-powered medical urgency detection using Logistic Regression
+short_description: AI app to detect urgent medical cases
 ---
 
 # 🏥 Medical Triage AI (Urgent vs Not Urgent)
