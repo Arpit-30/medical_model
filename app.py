@@ -8,20 +8,6 @@ body {
     font-family: 'Segoe UI', sans-serif;
 }
 
-#title {
-    text-align: center;
-    font-size: 40px;
-    font-weight: 800;
-    color: #0d47a1;
-}
-
-#subtitle {
-    text-align: center;
-    color: #444;
-    margin-bottom: 20px;
-    font-size: 16px;
-}
-
 button {
     background: linear-gradient(90deg, #42a5f5, #7e57c2) !important;
     color: white !important;
@@ -59,7 +45,7 @@ def ui_predict(age, heart_rate, bp, oxygen, temp, pain, disease, visits, mode):
     result = predict(input_data)
 
     return f"""
-    <div style="color:{result['color']};">
+    <div style="color:{result['color']}; font-size:20px;">
         {result['message']}<br><br>
         Confidence: {result['confidence']}
     </div>
@@ -68,8 +54,14 @@ def ui_predict(age, heart_rate, bp, oxygen, temp, pain, disease, visits, mode):
 # 🎨 UI
 with gr.Blocks(css=css) as demo:
 
-    gr.Markdown("<div id='title'>🏥 Medical Triage AI</div>")
-    gr.Markdown("<div id='subtitle'>AI-powered urgency detection</div>")
+    # ✅ FIXED TITLE (INLINE STYLE — ALWAYS WORKS)
+    gr.Markdown(
+        "<h1 style='text-align:center; font-size:42px; color:#0d47a1;'>🏥 Medical Triage AI</h1>"
+    )
+
+    gr.Markdown(
+        "<p style='text-align:center; color:#444; font-size:16px;'>AI-powered urgency detection</p>"
+    )
 
     with gr.Row():
         age = gr.Slider(0, 100, value=30, label="Age")
