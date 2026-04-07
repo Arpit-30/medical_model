@@ -55,9 +55,17 @@ def ui_predict(age, heart_rate, bp, oxygen, temp, pain, disease, visits, mode):
 with gr.Blocks(css=css) as demo:
 
     # ✅ FIXED TITLE (INLINE STYLE — ALWAYS WORKS)
-    gr.Markdown(
-        "<h1 style='text-align:center; font-size:42px; color:#111212;'>🏥 Medical Triage AI</h1>"
-    )
+    gr.HTML("""
+    <div style="
+        text-align: center;
+        font-size: 42px;
+        font-weight: 800;
+        color: #0d47a1;
+        margin-bottom: 5px;
+    ">
+        🏥 Medical Triage AI
+    </div>
+    """)
 
     gr.Markdown(
         "<p style='text-align:center; color:#444; font-size:16px;'>AI-powered urgency detection</p>"
