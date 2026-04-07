@@ -56,7 +56,7 @@ with gr.Blocks(css=css) as demo:
 
     # ✅ FIXED TITLE (INLINE STYLE — ALWAYS WORKS)
     gr.Markdown(
-        "<h1 style='text-align:center; font-size:42px; color:#0d47a1;'>🏥 Medical Triage AI</h1>"
+        "<h1 style='text-align:center; font-size:42px; color:#111212;'>🏥 Medical Triage AI</h1>"
     )
 
     gr.Markdown(
