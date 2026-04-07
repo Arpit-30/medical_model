@@ -1,84 +1,29 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree.
+from fastapi import FastAPI
+from models import Observation, Action
+from server.email_env_environment import MedicalEnvironment
 
-"""
-FastAPI application for the Email Env Environment.
+app = FastAPI()
 
-This module creates an HTTP server that exposes the EmailEnvironment
-over HTTP and WebSocket endpoints, compatible with EnvClient.
-
-Endpoints:
-    - POST /reset: Reset the environment
-    - POST /step: Execute an action
-    - GET /state: Get current environment state
-    - GET /schema: Get action/observation schemas
-    - WS /ws: WebSocket endpoint for persistent sessions
-
-Usage:
-    # Development (with auto-reload):
-    uvicorn server.app:app --reload --host 0.0.0.0 --port 8000
-
-    # Production:
-    uvicorn server.app:app --host 0.0.0.0 --port 8000 --workers 4
-
-    # Or run directly:
-    python -m server.app
-"""
-
-try:
-    from openenv.core.env_server.http_server import create_app
-except Exception as e:
-    raise ImportError(
-        "openenv is required. Install it using:\n\npip install openenv-core"
-    ) from e
-
-try:
-    from ..models import Action, Observation
-    from .email_env_environment import EmailEnvironment
-except ModuleNotFoundError:
-    from models import Action, Observation
-    from server.email_env_environment import EmailEnvironment
+env = MedicalEnvironment()
 
 
-# Create the app with web interface and README integration
-app = create_app(
-    EmailEnvironment,
-    Action,
-    Observation,
-    env_name="email_env",
-    max_concurrent_envs=1,  # increase this number to allow more concurrent WebSocket sessions
-)
+@app.post("/reset")
+def reset():
+    obs = env.reset()
+    return {"observation": obs.dict()}
 
 
-def main(host: str = "0.0.0.0", port: int = 8000):
-    """
-    Entry point for direct execution via uv run or python -m.
+@app.post("/step")
+def step(action: Action):
+    obs, reward, done, _ = env.step(action)
 
-    This function enables running the server without Docker:
-        uv run --project . server
-        uv run --project . server --port 8001
-        python -m email_env.server.app
-
-    Args:
-        host: Host address to bind to (default: "0.0.0.0")
-        port: Port number to listen on (default: 8000)
-
-    For production deployments, consider using uvicorn directly with
-    multiple workers:
-        uvicorn email_env.server.app:app --workers 4
-    """
-    import uvicorn
-    uvicorn.run(app, host=host, port=port)
+    return {
+        "observation": obs.dict(),
+        "reward": reward.dict(),
+        "done": done
+    }
 
 
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=8000)
-    args = parser.parse_args()
-
-    main(port=args.port)
+@app.get("/state")
+def state():
+    return env.state()

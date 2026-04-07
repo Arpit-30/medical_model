@@ -1,90 +1,67 @@
 ---
-title: Email Spam Env
-emoji: 🚀
-colorFrom: blue
-colorTo: yellow
-sdk: gradio 
+title: Medical Triage AI
+emoji: 🏥
+colorFrom: red
+colorTo: green
+sdk: gradio
 pinned: false
 license: mit
-short_description: AI email spam detection using OpenEnv
+short_description: AI-powered medical urgency detection using Logistic Regression
 ---
-# 📧 AI Email Spam Detection (OpenEnv)
+
+# 🏥 Medical Triage AI (Urgent vs Not Urgent)
 
 ## 🚀 Overview
 
-This project implements a **real-world email spam detection environment** using the OpenEnv specification.
+This project is an **AI-powered medical triage system** that classifies symptoms into:
 
-The environment simulates how humans and AI systems classify emails into:
+- 🚨 **Urgent**
+- ✅ **Not Urgent**
 
-* **spam**
-* **not_spam**
-
-It provides:
-
-* Sequential decision-making
-* Reward-based learning
-* Multi-level difficulty tasks
+It uses **Machine Learning (Logistic Regression)** to help users quickly assess whether medical attention is needed.
 
 ---
 
 ## 🧠 Motivation
 
-Spam detection is widely used in:
+In real life, people often struggle to decide:
 
-* 📩 Email platforms (Gmail, Outlook)
-* 🔐 Cybersecurity systems
-* 💳 Fraud detection
+- "Is this serious?"
+- "Should I go to the hospital?"
 
-This environment models real-world trade-offs:
+This system helps by:
 
-* Avoid false positives (blocking real emails)
-* Detect harmful spam effectively
+- ⚡ Providing instant guidance  
+- 🧠 Using AI for decision support  
+- 🏥 Assisting early triage in healthcare  
+
+---
+
+## 🛠️ Tech Stack
+
+- **Machine Learning:** Logistic Regression (scikit-learn)
+- **Text Processing:** TF-IDF Vectorization
+- **Frontend:** Gradio (UI)
+- **Backend:** FastAPI (optional API)
+- **Language:** Python
 
 ---
 
 ## 📁 Project Structure
 
 ```text
-email_env/
+medical_ai/
 │
 ├── data/
-│   └── emails_clean.csv
+│   └── triage.csv
 │
 ├── server/
-│   ├── app.py
-│   ├── email_env_environment.py
-│   ├── Dockerfile
-│   └── requirements.txt
+│   └── app.py          # FastAPI backend
 │
-├── models.py
-├── grader.py
-├── inference.py
-├── ui_app.py
-├── openenv.yaml
+├── app.py              # Gradio UI
+├── inference.py        # ML prediction logic
+├── models.py           # Data models
+├── grader.py           # Evaluation
+├── fix_csv.py          # Dataset cleaner
+├── requirements.txt
 └── README.md
-```
-
----
-
-## 🧩 Environment Design
-
-### 👀 Observation Space
-
-Each step returns:
-
-* `email_text` → email content
-* `has_link` → detects URLs (http/www)
-* `has_money` → detects scam signals ($, £, prize, cash)
-* `step_count` → step index
-
----
-
-### 🎯 Action Space
-
-Agent must choose:
-
-* `spam`
-* `not_spam`
-
-
-

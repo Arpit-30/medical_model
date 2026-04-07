@@ -1,22 +1,36 @@
 import pandas as pd
 
-df = pd.read_csv("data/spam mail.csv", encoding="latin-1")
+# 📊 Load your raw medical dataset
+# 👉 Change file name if needed
+df = pd.read_csv("data/medical_raw.csv")
 
-# rename columns
+# 🧹 Standardize column names
 df = df.rename(columns={
-    "Category": "label",
-    "Masseges": "text"
+    "symptoms": "text",
+    "urgency": "label"
 })
 
-# FIX: swap columns order
+# Keep only required columns
 df = df[["text", "label"]]
 
-# convert labels
+# 🏷️ Normalize labels
+df["label"] = df["label"].str.lower()
+
 df["label"] = df["label"].map({
-    "ham": "not_spam",
-    "spam": "spam"
+    "urgent": "urgent",
+    "not urgent": "not_urgent",
+    "not_urgent": "not_urgent",
+    "low": "not_urgent",
+    "high": "urgent"
 })
 
-df.to_csv("data/emails_clean.csv", index=False)
+# ❌ Remove missing values
+df = df.dropna()
 
-print("✅ Fixed CSV properly")
+# 🔄 Remove duplicates
+df = df.drop_duplicates()
+
+# 💾 Save cleaned dataset
+df.to_csv("data/triage.csv", index=False)
+
+print("✅ Medical dataset cleaned and saved as triage.csv")

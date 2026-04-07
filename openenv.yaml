@@ -1,7 +1,6 @@
 spec_version: 1
-name: email_env
-type: space
+name: medical_triage_env
+type: service
 runtime: fastapi
 app: server.app:app
 port: 8000
-

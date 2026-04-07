@@ -1,170 +1,105 @@
 import gradio as gr
-from server.email_env_environment import EmailEnvironment
-from models import Action
+from inference import predict
 
-env = None
-obs = None
-score = 0
-steps = 0
+# 🎨 CSS
+css = """
+body {
+    background: linear-gradient(135deg, #e3f2fd, #fce4ec);
+    font-family: 'Segoe UI', sans-serif;
+}
 
+#title {
+    text-align: center;
+    font-size: 36px;
+    font-weight: bold;
+    color: #0d47a1;
+}
 
-# 🧠 AI MODEL
-def smart_ai(email):
-    email = email.lower()
-    keywords = ["free", "win", "offer", "urgent", "cash"]
+#subtitle {
+    text-align: center;
+    color: #444;
+    margin-bottom: 20px;
+}
 
-    score_val = sum(1 for w in keywords if w in email)
-    if "http" in email or "www" in email:
-        score_val += 1
+button {
+    background: linear-gradient(90deg, #42a5f5, #7e57c2) !important;
+    color: white !important;
+    border-radius: 12px !important;
+    padding: 10px;
+}
 
-    return "spam" if score_val >= 1 else "not_spam"
+button:hover {
+    background: linear-gradient(90deg, #1e88e5, #5e35b1) !important;
+}
 
+.result-box {
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    padding: 15px;
+}
+"""
 
-# 🧠 EXPLAINABILITY
-def explain(email):
-    email = email.lower()
-    reasons = []
+# 🔍 Prediction wrapper
+def ui_predict(age, heart_rate, bp, oxygen, temp, pain, disease, visits, mode):
+    input_data = {
+        "age": age,
+        "heart_rate": heart_rate,
+        "systolic_blood_pressure": bp,
+        "oxygen_saturation": oxygen,
+        "body_temperature": temp,
+        "pain_level": pain,
+        "chronic_disease_count": disease,
+        "previous_er_visits": visits,
+        "arrival_mode": mode
+    }
 
-    for w in ["free", "win", "offer", "urgent", "cash"]:
-        if w in email:
-            reasons.append(f"keyword: {w}")
+    result = predict(input_data)
 
-    if "http" in email or "www" in email:
-        reasons.append("contains link")
+    return f"""
+    <div style="color:{result['color']};">
+        {result['message']}<br><br>
+        Confidence: {result['confidence']}
+    </div>
+    """
 
-    return ", ".join(reasons) if reasons else "no strong spam signals"
+# 🎨 UI
+with gr.Blocks() as demo:   # ✅ FIXED (no css here)
 
+    gr.Markdown("<div id='title'>🏥 Medical Triage AI</div>")
+    gr.Markdown("<div id='subtitle'>AI-powered urgency detection</div>")
 
-# 👤 MANUAL ACTION
-def classify(action):
-    global obs, score, steps
+    with gr.Row():
+        age = gr.Slider(0, 100, value=30, label="Age")
+        heart_rate = gr.Slider(40, 180, value=80, label="Heart Rate")
 
-    if obs is None:
-        return "⚠️ Please select a task first", "", ""
+    with gr.Row():
+        bp = gr.Slider(80, 200, value=120, label="Blood Pressure")
+        oxygen = gr.Slider(70, 100, value=98, label="Oxygen Saturation")
 
-    email_text = obs.email_text
-    reason = explain(email_text)
+    with gr.Row():
+        temp = gr.Slider(35, 42, value=37, label="Body Temperature")
+        pain = gr.Slider(0, 10, value=2, label="Pain Level")
 
-    obs, reward, done, _ = env.step(Action(action_type=action))
+    with gr.Row():
+        disease = gr.Number(value=0, label="Chronic Disease Count")
+        visits = gr.Number(value=0, label="Previous ER Visits")
 
-    score += reward.value
-    steps += 1
-
-    avg = score / steps if steps else 0
-
-    return email_text, f"{reward.value} | {reason}", f"{avg:.2f}"
-
-
-# 🔄 TASK CHANGE
-def change_task(task):
-    global env, obs, score, steps
-
-    if task == "Select Task":
-        return (
-            "",
-            "⚠️ Please select a task",
-            "0.0",
-            "",
-            gr.update(interactive=False),
-            gr.update(interactive=False),
-            gr.update(interactive=False),
-        )
-
-    env = EmailEnvironment(task=task)
-    obs = env.reset()
-
-    score = 0
-    steps = 0
-
-    return (
-        obs.email_text,
-        "0",
-        "0.0",
-        "",
-        gr.update(interactive=True),
-        gr.update(interactive=True),
-        gr.update(interactive=True),
+    # ✅ FIXED DROPDOWN
+    mode = gr.Dropdown(
+        ["walk-in", "ambulance"],
+        value="walk-in",   # ✅ MUST match choices
+        label="Arrival Mode"
     )
 
+    btn = gr.Button("🔍 Check Urgency")
+    output = gr.HTML(elem_classes="result-box")
 
-# 🤖 AUTO AI
-def run_ai():
-    global env, obs, score, steps
-
-    if obs is None:
-        return "", "⚠️ Please select a task first", ""
-
-    log_text = ""
-
-    for _ in range(5):
-        if env.done:
-            break
-
-        email_text = obs.email_text
-        action = smart_ai(email_text)
-        reason = explain(email_text)
-
-        obs, reward, done, _ = env.step(Action(action_type=action))
-
-        score += reward.value
-        steps += 1
-
-        log_text += f"Step {steps}: {action.upper()} → {reward.value}\n"
-        log_text += f"   Reason: {reason}\n\n"
-
-    avg = score / steps if steps else 0
-
-    return obs.email_text, log_text, f"{avg:.2f}"
-
-
-# 🎨 UI (MOBILE FRIENDLY + CLEAN)
-with gr.Blocks(fill_width=True) as demo:
-
-    gr.Markdown("## 📧 AI Email Spam Detector")
-    gr.Markdown("Select a task → classify emails manually or run AI simulation")
-
-    task = gr.Dropdown(
-        ["Select Task", "easy", "medium", "hard"],
-        value="Select Task",
-        label="🎯 Select Task"
+    btn.click(
+        ui_predict,
+        inputs=[age, heart_rate, bp, oxygen, temp, pain, disease, visits, mode],
+        outputs=output
     )
 
-    email = gr.Textbox(label="📨 Email", lines=3)
-
-    reward = gr.Textbox(label="🎯 Reward + Explanation")
-
-    score_box = gr.Textbox(label="📊 Average Score")
-
-    spam = gr.Button("🚨 Mark as Spam", interactive=False)
-    not_spam = gr.Button("✅ Mark as Safe", interactive=False)
-
-    ai = gr.Button("🤖 Run AI Simulation", interactive=False)
-
-    log = gr.Textbox(label="🤖 AI Decision Log", lines=5)
-
-    # 🔁 TASK CHANGE
-    task.change(
-        change_task,
-        inputs=task,
-        outputs=[email, reward, score_box, log, spam, not_spam, ai]
-    )
-
-    # 👤 MANUAL ACTIONS
-    spam.click(
-        lambda: classify("spam"),
-        outputs=[email, reward, score_box]
-    )
-
-    not_spam.click(
-        lambda: classify("not_spam"),
-        outputs=[email, reward, score_box]
-    )
-
-    # 🤖 AUTO AI
-    ai.click(
-        run_ai,
-        outputs=[email, log, score_box]
-    )
-
-
-demo.launch()
+# ✅ FIXED LAUNCH
+demo.launch(css=css)
