@@ -10,8 +10,8 @@ body {
 
 #title {
     text-align: center;
-    font-size: 36px;
-    font-weight: bold;
+    font-size: 40px;
+    font-weight: 800;
     color: #0d47a1;
 }
 
@@ -19,13 +19,15 @@ body {
     text-align: center;
     color: #444;
     margin-bottom: 20px;
+    font-size: 16px;
 }
 
 button {
     background: linear-gradient(90deg, #42a5f5, #7e57c2) !important;
     color: white !important;
     border-radius: 12px !important;
-    padding: 10px;
+    padding: 12px;
+    font-size: 16px;
 }
 
 button:hover {
@@ -33,10 +35,10 @@ button:hover {
 }
 
 .result-box {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: bold;
     text-align: center;
-    padding: 15px;
+    padding: 20px;
 }
 """
 
@@ -64,7 +66,7 @@ def ui_predict(age, heart_rate, bp, oxygen, temp, pain, disease, visits, mode):
     """
 
 # 🎨 UI
-with gr.Blocks() as demo:   # ✅ FIXED (no css here)
+with gr.Blocks(css=css) as demo:
 
     gr.Markdown("<div id='title'>🏥 Medical Triage AI</div>")
     gr.Markdown("<div id='subtitle'>AI-powered urgency detection</div>")
@@ -85,10 +87,9 @@ with gr.Blocks() as demo:   # ✅ FIXED (no css here)
         disease = gr.Number(value=0, label="Chronic Disease Count")
         visits = gr.Number(value=0, label="Previous ER Visits")
 
-    # ✅ FIXED DROPDOWN
     mode = gr.Dropdown(
         ["walk-in", "ambulance"],
-        value="walk-in",   # ✅ MUST match choices
+        value="walk-in",
         label="Arrival Mode"
     )
 
@@ -101,5 +102,5 @@ with gr.Blocks() as demo:   # ✅ FIXED (no css here)
         outputs=output
     )
 
-# ✅ FIXED LAUNCH
-demo.launch(css=css)
+# 🚀 Launch
+demo.launch()
