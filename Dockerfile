@@ -9,7 +9,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # 📁 Copy project files
-COPY . /app
+COPY server /app
 
 # 📦 Install Python dependencies
 RUN pip install --no-cache-dir \
