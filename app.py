@@ -1,5 +1,8 @@
 import gradio as gr
 from inference import predict
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 # 🎨 CSS — Dark Medical Tech Theme
 css = """
@@ -210,7 +213,7 @@ input[type="number"]:focus {
     box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,179,237,0.1) !important;
     z-index: 99999 !important;
     position: absolute !important;
-    overflow: hidden !important; /* Only the list clips, not parents */
+    overflow: hidden !important;
     backdrop-filter: blur(16px) !important;
 }
 
@@ -357,9 +360,7 @@ def ui_predict(age, heart_rate, bp, oxygen, temp, pain, disease, visits, mode):
         "previous_er_visits": visits,
         "arrival_mode": mode
     }
-
     result = predict(input_data)
-
     return f"""
     <div style="color:{result['color']}; font-size:20px; font-family:'DM Sans',sans-serif; font-weight:700; letter-spacing:0.01em;">
         {result['message']}<br><br>
@@ -372,45 +373,11 @@ def ui_predict(age, heart_rate, bp, oxygen, temp, pain, disease, visits, mode):
 # 🎨 UI
 with gr.Blocks(css=css) as demo:
 
-    # ── Header ──
     gr.HTML("""
-    <div style="
-        text-align: center;
-        padding: 36px 0 8px;
-    ">
-        <div style="
-            display: inline-block;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            color: #63b3ed;
-            background: rgba(99,179,237,0.1);
-            border: 1px solid rgba(99,179,237,0.25);
-            border-radius: 99px;
-            padding: 4px 16px;
-            margin-bottom: 16px;
-        ">AI-Powered Emergency Triage</div>
-
-        <div style="
-            font-size: 44px;
-            font-weight: 800;
-            font-family: 'DM Sans', sans-serif;
-            background: linear-gradient(90deg, #63b3ed, #76e4f7, #b794f4);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            line-height: 1.15;
-            margin-bottom: 12px;
-        ">🏥 Medical Triage AI</div>
-
-        <div style="
-            width: 60px;
-            height: 3px;
-            background: linear-gradient(90deg, #63b3ed, #b794f4);
-            border-radius: 99px;
-            margin: 20px auto 0;
-        "></div>
+    <div style="text-align: center; padding: 36px 0 8px;">
+        <div style="display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #63b3ed; background: rgba(99,179,237,0.1); border: 1px solid rgba(99,179,237,0.25); border-radius: 99px; padding: 4px 16px; margin-bottom: 16px;">AI-Powered Emergency Triage</div>
+        <div style="font-size: 44px; font-weight: 800; font-family: 'DM Sans', sans-serif; background: linear-gradient(90deg, #63b3ed, #76e4f7, #b794f4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.15; margin-bottom: 12px;">🏥 Medical Triage AI</div>
+        <div style="width: 60px; height: 3px; background: linear-gradient(90deg, #63b3ed, #b794f4); border-radius: 99px; margin: 20px auto 0;"></div>
     </div>
     """)
 
@@ -436,7 +403,6 @@ with gr.Blocks(css=css) as demo:
         label="Arrival Mode"
     )
 
-    # ── Action & Output ──
     btn    = gr.Button("🔍 Assess Urgency", variant="primary")
     output = gr.HTML(elem_classes="result-box")
 
@@ -446,7 +412,6 @@ with gr.Blocks(css=css) as demo:
         outputs=output
     )
 
-    # ── Footer + Slider JS Fix ──
     gr.HTML("""
     <div style="text-align:center;padding:24px 0 8px;font-size:12px;color:#4a5568;font-family:'DM Sans',sans-serif;letter-spacing:0.03em;">
         For clinical decision support only &middot; Not a substitute for professional medical judgment
@@ -464,22 +429,9 @@ with gr.Blocks(css=css) as demo:
                     'linear-gradient(90deg, #63b3ed ' + pct + '%, rgba(99,179,237,0.15) ' + pct + '%)',
                     'important');
             });
-            document.querySelectorAll('.gradio-container div[style*="background"]').forEach(function(el) {
-                var s = el.getAttribute('style') || '';
-                if (s.indexOf('var(--color-accent') !== -1 || s.indexOf('rgb(249, 115') !== -1 ||
-                    s.indexOf('f97316') !== -1 || s.indexOf('orange') !== -1) {
-                    el.style.setProperty('background', 'linear-gradient(90deg, #63b3ed, #76e4f7)', 'important');
-                }
-            });
         }
-
-        /* ── Dropdown positioning fix ──
-           Forces the options list to ALWAYS appear BELOW the trigger,
-           using fixed positioning relative to the viewport so it can
-           never be clipped or flipped upward by Gradio's flip logic. */
         function fixDropdownOverflow() {
             document.querySelectorAll('ul.options').forEach(function(ul) {
-                // Walk up and unlock overflow on all ancestors
                 var el = ul.parentElement;
                 var depth = 0;
                 while (el && depth < 14) {
@@ -487,12 +439,8 @@ with gr.Blocks(css=css) as demo:
                     el = el.parentElement;
                     depth++;
                 }
-
-                // Find the dropdown trigger (the .wrap-inner or parent block)
                 var trigger = ul.closest('.block, .wrap, [data-testid="dropdown"]');
                 if (!trigger) trigger = ul.parentElement;
-
-                // Use fixed positioning anchored below the trigger
                 var rect = trigger.getBoundingClientRect();
                 ul.style.setProperty('position', 'fixed', 'important');
                 ul.style.setProperty('top', (rect.bottom + 4) + 'px', 'important');
@@ -500,21 +448,14 @@ with gr.Blocks(css=css) as demo:
                 ul.style.setProperty('width', rect.width + 'px', 'important');
                 ul.style.setProperty('z-index', '999999', 'important');
                 ul.style.setProperty('overflow', 'hidden', 'important');
-                // Remove any bottom/transform Gradio may have set to flip it up
                 ul.style.setProperty('bottom', 'unset', 'important');
                 ul.style.setProperty('transform', 'none', 'important');
             });
         }
-
         fixSliders();
         fixDropdownOverflow();
-
-        var observer = new MutationObserver(function(mutations) {
-            fixSliders();
-            fixDropdownOverflow();
-        });
+        var observer = new MutationObserver(function() { fixSliders(); fixDropdownOverflow(); });
         observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['style','class']});
-
         document.addEventListener('input', function(e) {
             if (e.target && e.target.type === 'range') {
                 var min = parseFloat(e.target.min) || 0;
@@ -530,5 +471,16 @@ with gr.Blocks(css=css) as demo:
     </script>
     """)
 
-# 🚀 Launch
-demo.launch()
+# 🚀 FastAPI + Gradio — /reset route MUST be added BEFORE mounting
+app = FastAPI()
+
+@app.post("/reset")
+def reset():
+    return {"status": "ok"}
+
+@app.post("/predict")
+def predict_api(data: dict):
+    return predict(data)
+
+# Mount Gradio LAST — after all FastAPI routes are registered
+app = gr.mount_gradio_app(app, demo, path="/")
