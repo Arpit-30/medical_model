@@ -371,7 +371,8 @@ def ui_predict(age, heart_rate, bp, oxygen, temp, pain, disease, visits, mode):
     """
 
 # 🎨 UI
-with gr.Blocks(css=css) as demo:
+with gr.Blocks() as demo:
+    demo.css = css
 
     gr.HTML("""
     <div style="text-align: center; padding: 36px 0 8px;">
