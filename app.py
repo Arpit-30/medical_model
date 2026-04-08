@@ -3,6 +3,7 @@ from inference import predict
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from fastapi.responses import RedirectResponse
 
 # 🎨 CSS — Dark Medical Tech Theme
 css = """
@@ -482,6 +483,9 @@ def reset():
 @app.post("/predict")
 def predict_api(data: dict):
     return predict(data)
+@app.get("/")
+def root():
+    return RedirectResponse(url="/ui")
 
 # Mount Gradio LAST — after all FastAPI routes are registered
 app = gr.mount_gradio_app(app, demo, path="/ui")
