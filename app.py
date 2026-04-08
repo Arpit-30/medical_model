@@ -483,4 +483,4 @@ def predict_api(data: dict):
     return predict(data)
 
 # Mount Gradio LAST — after all FastAPI routes are registered
-app = gr.mount_gradio_app(app, demo, path="/")
+app = gr.mount_gradio_app(app, demo, path="/ui")
