@@ -485,7 +485,7 @@ def predict_api(data: dict):
     return predict(data)
 @app.get("/")
 def root():
-    return RedirectResponse(url="/ui")
+    return {"message": "API running. Go to /ui for interface"}
 
 # Mount Gradio LAST — after all FastAPI routes are registered
 app = gr.mount_gradio_app(app, demo, path="/ui")
