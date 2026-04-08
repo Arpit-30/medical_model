@@ -480,6 +480,10 @@ app = FastAPI()
 def reset():
     return {"status": "ok"}
 
+@app.get("/reset")
+def reset_get():
+    return {"status": "ok"}
+
 @app.post("/predict")
 def predict_api(data: dict):
     return predict(data)
