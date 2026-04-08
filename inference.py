@@ -2,42 +2,56 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 
 # =========================
-# 📊 LOAD DATA
+# 📊 LOAD DATA (SAFE)
 # =========================
 
 try:
     df = pd.read_csv("data/triage.csv")
+    if df is None or df.empty:
+        raise ValueError("Empty dataset")
 except:
     df = pd.DataFrame()
 
-# 🔥 Convert to binary (IMPORTANT)
+# =========================
+# 🔥 LABEL CONVERSION
+# =========================
+
 def convert_label(x):
     try:
-        return 1 if x >= 2 else 0
+        return 1 if float(x) >= 2 else 0
     except:
         return 0
 
-if not df.empty:
-    df["urgency"] = df["triage_level"].apply(convert_label)
+# =========================
+# 🤖 TRAIN MODEL (SAFE)
+# =========================
 
-    X = df.drop(["triage_level", "urgency"], axis=1)
-    y = df["urgency"]
+if not df.empty and "triage_level" in df.columns:
+    try:
+        df["urgency"] = df["triage_level"].apply(convert_label)
 
-    X = pd.get_dummies(X)
-    feature_columns = X.columns
+        X = df.drop(["triage_level", "urgency"], axis=1)
+        y = df["urgency"]
 
-    model = RandomForestClassifier(
-        n_estimators=200,
-        max_depth=10,
-        class_weight="balanced",
-        random_state=42
-    )
+        X = pd.get_dummies(X)
 
-    model.fit(X, y)
+        feature_columns = list(X.columns)
+
+        model = RandomForestClassifier(
+            n_estimators=200,
+            max_depth=10,
+            class_weight="balanced",
+            random_state=42
+        )
+
+        model.fit(X, y)
+
+    except:
+        model = None
+        feature_columns = []
 else:
     model = None
     feature_columns = []
-
 
 # =========================
 # 🔍 SAFE ML FUNCTION
@@ -45,12 +59,24 @@ else:
 
 def ml_ai(input_data: dict):
     try:
+        # 🚨 fallback if model not ready
+        if model is None or len(feature_columns) == 0:
+            return 0, 0.5
+
         input_df = pd.DataFrame([input_data])
 
         input_df = pd.get_dummies(input_df)
-        input_df = input_df.reindex(columns=feature_columns, fill_value=0)
 
-        if model is None:
+        # ✅ ensure all training columns exist
+        for col in feature_columns:
+            if col not in input_df.columns:
+                input_df[col] = 0
+
+        # ✅ keep only required columns
+        input_df = input_df[feature_columns]
+
+        # 🚨 safety check
+        if input_df.shape[1] == 0:
             return 0, 0.5
 
         pred = model.predict(input_df)[0]
@@ -63,7 +89,7 @@ def ml_ai(input_data: dict):
 
 
 # =========================
-# 🔥 FINAL SAFE PREDICT
+# 🔥 FINAL PREDICT (CRASH PROOF)
 # =========================
 
 def predict(input_data: dict):
@@ -77,10 +103,10 @@ def predict(input_data: dict):
         pain = float(input_data.get("pain_level", 0) or 0)
         chronic = float(input_data.get("chronic_disease_count", 0) or 0)
         visits = float(input_data.get("previous_er_visits", 0) or 0)
-        arrival = input_data.get("arrival_mode", "walk-in")
+        arrival = input_data.get("arrival_mode", "walk-in") or "walk-in"
 
         # =========================
-        # 🚨 RULE-BASED BOOST (VERY IMPORTANT FOR SCORE)
+        # 🚨 RULE-BASED LOGIC
         # =========================
 
         if spo2 < 85:
@@ -141,7 +167,7 @@ def predict(input_data: dict):
             }
 
     except Exception as e:
-        # 🚨 NEVER CRASH (MOST IMPORTANT)
+        # 🚨 ABSOLUTE FALLBACK (NEVER CRASH)
         return {
             "label": "not_urgent",
             "confidence": 0.5,
